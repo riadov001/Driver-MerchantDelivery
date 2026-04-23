@@ -63,18 +63,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const isSharedRoute = seg0 === "orders" || seg0 === "menu";
     if (isSharedRoute) return;
 
-    if (mode === "driver" && !inDriver && (inMerchant || !seg0)) {
+    // Wait until viewMode has resolved to one of merchant/driver before
+    // routing — otherwise the first render can bounce between groups.
+    if (!mode) return;
+
+    if (mode === "driver" && !inDriver) {
       router.replace("/(driver)");
-    } else if (mode === "merchant" && !inMerchant && (inDriver || !seg0)) {
-      router.replace("/(merchant)");
-    } else if (!inMerchant && !inDriver && !seg0) {
-      router.replace(mode === "driver" ? "/(driver)" : "/(merchant)");
-    }
-    // user role hints (safety)
-    if (user?.role === "driver" && mode !== "driver" && inMerchant) {
-      router.replace("/(driver)");
-    }
-    if (user?.role === "restaurant_owner" && mode !== "merchant" && inDriver) {
+    } else if (mode === "merchant" && !inMerchant) {
       router.replace("/(merchant)");
     }
   }, [loading, modeLoading, token, user, mode, segments, router]);

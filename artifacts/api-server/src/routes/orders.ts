@@ -32,7 +32,7 @@ async function getOrderWithItems(orderId: number) {
   return { ...order, items };
 }
 
-router.get("/orders/active", async (req, res): Promise<void> => {
+router.get("/orders/active", requireAuth, async (req, res): Promise<void> => {
   const activeStatuses = ["pending", "accepted", "preparing", "ready", "picked_up"];
   const orders = await db.select().from(ordersTable).where(inArray(ordersTable.status, activeStatuses));
 
@@ -47,7 +47,7 @@ router.get("/orders/active", async (req, res): Promise<void> => {
 });
 
 /** Orders that are "ready" — available for any driver to pick up */
-router.get("/orders/available", async (req, res): Promise<void> => {
+router.get("/orders/available", requireAuth, async (req, res): Promise<void> => {
   const orders = await db
     .select()
     .from(ordersTable)

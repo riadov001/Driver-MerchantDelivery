@@ -17,6 +17,20 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _onUnauthorized: ((status: number) => void) | null = null;
+
+/**
+ * Register a callback that fires whenever the server responds with HTTP 401
+ * or 403, indicating the current credentials are invalid or expired.
+ *
+ * Useful for triggering a global sign-out when a token has expired.
+ * Pass `null` to clear the callback.
+ */
+export function setOnUnauthorized(
+  cb: ((status: number) => void) | null,
+): void {
+  _onUnauthorized = cb;
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -364,6 +378,13 @@ export async function customFetch<T = unknown>(
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
+    if ((response.status === 401 || response.status === 403) && _onUnauthorized) {
+      try {
+        _onUnauthorized(response.status);
+      } catch {
+        // ignore handler errors
+      }
+    }
     throw new ApiError(response, errorData, requestInfo);
   }
 

@@ -19,7 +19,12 @@ async function fetchMyDriver(): Promise<Driver | null> {
   const res = await fetch(`${base}/api/drivers/me`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
+  // 404 = authenticated user has no driver profile (e.g. admin browsing in
+  // driver mode). Treat as "no profile" rather than an error.
   if (res.status === 404) return null;
+  // 401/403 = stale token. Return null so the screen renders its empty state
+  // while the global onUnauthorized handler in auth.tsx triggers signOut.
+  if (res.status === 401 || res.status === 403) return null;
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);

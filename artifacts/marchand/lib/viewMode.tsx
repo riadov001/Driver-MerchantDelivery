@@ -34,15 +34,21 @@ export function ViewModeProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Force the mode for non-admins based on their role.
+  // Force the mode for non-admins based on their role, and persist so the
+  // stored value never disagrees with the active role on next launch.
   useEffect(() => {
     if (!user) return;
+    let forced: ViewMode | null = null;
     if (user.role === "restaurant_owner" && mode !== "merchant") {
-      setModeState("merchant");
+      forced = "merchant";
     } else if (user.role === "driver" && mode !== "driver") {
-      setModeState("driver");
+      forced = "driver";
     } else if (user.role === "admin" && !mode) {
-      setModeState("merchant");
+      forced = "merchant";
+    }
+    if (forced) {
+      setModeState(forced);
+      AsyncStorage.setItem(KEY, forced).catch(() => {});
     }
   }, [user, mode]);
 

@@ -45,7 +45,13 @@ export default function OrderDetail() {
   const { mode } = useViewMode();
   const [pickupCode, setPickupCode] = useState("");
 
-  const { data: order, isLoading } = useGetOrder(orderId, {
+  const {
+    data: order,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetOrder(orderId, {
     query: { enabled: !!orderId, refetchInterval: 10_000 } as any,
   });
 
@@ -76,7 +82,7 @@ export default function OrderDetail() {
     },
   });
 
-  if (isLoading || !order) {
+  if (isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
@@ -84,9 +90,55 @@ export default function OrderDetail() {
     );
   }
 
+  if (isError || !order) {
+    const msg =
+      error instanceof Error ? error.message : "Commande introuvable.";
+    return (
+      <View style={styles.center}>
+        <Text
+          style={{
+            color: colors.foreground,
+            fontFamily: "Inter_600SemiBold",
+            textAlign: "center",
+          }}
+        >
+          Impossible de charger la commande
+        </Text>
+        <Text
+          style={{
+            color: colors.mutedForeground,
+            marginTop: 6,
+            textAlign: "center",
+          }}
+        >
+          {msg}
+        </Text>
+        <Pressable
+          onPress={() => refetch()}
+          style={[
+            styles.primaryBtn,
+            { backgroundColor: colors.primary, marginTop: 16, paddingHorizontal: 24 },
+          ]}
+        >
+          <Text
+            style={{
+              color: colors.primaryForeground,
+              fontFamily: "Inter_600SemiBold",
+            }}
+          >
+            Réessayer
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   const isAdmin = user?.role === "admin";
   const showMerchantActions = mode === "merchant" || isAdmin;
-  const showDriverActions = mode === "driver" || isAdmin;
+  // Only show driver delivery-confirmation UI to actual drivers — admins in
+  // driver mode have no driver profile and would 403/404 when posting the
+  // pickup code.
+  const showDriverActions = mode === "driver" && user?.role === "driver";
   const merchantNext = MERCHANT_NEXT[order.status];
 
   const setStatus = (next: string) => {

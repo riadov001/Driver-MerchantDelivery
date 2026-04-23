@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   setAuthTokenGetter,
+  setOnUnauthorized,
   type User,
 } from "@workspace/api-client-react";
 import React, {
@@ -9,11 +10,14 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 const TOKEN_KEY = "marchand_token";
 const USER_KEY = "marchand_user";
+const VIEW_MODE_KEY = "marchand_view_mode";
+const SELECTED_RESTAURANT_KEY = "marchand_selected_restaurant";
 
 let currentToken: string | null = null;
 
@@ -74,7 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await Promise.all([
       AsyncStorage.removeItem(TOKEN_KEY),
       AsyncStorage.removeItem(USER_KEY),
+      AsyncStorage.removeItem(VIEW_MODE_KEY),
+      AsyncStorage.removeItem(SELECTED_RESTAURANT_KEY),
     ]);
+  }, []);
+
+  // Global handler: any 401/403 from the API auto-signs the user out so the
+  // AuthGate can redirect them to the login screen instead of leaving them
+  // stranded with a stale token.
+  const signOutRef = useRef(signOut);
+  signOutRef.current = signOut;
+  useEffect(() => {
+    setOnUnauthorized((status) => {
+      if (status === 401) {
+        void signOutRef.current();
+      }
+    });
+    return () => setOnUnauthorized(null);
   }, []);
 
   const value = useMemo<AuthContextValue>(

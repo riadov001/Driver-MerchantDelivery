@@ -108,7 +108,7 @@ export default function MerchantHome() {
           color={colors.primary}
         />
         <StatCard
-          label="Aujourd'hui"
+          label="Total commandes"
           value={stats.data?.totalOrders ?? 0}
           color={colors.foreground}
         />

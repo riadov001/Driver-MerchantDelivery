@@ -29,9 +29,10 @@ export default function DriverAvailable() {
   const qc = useQueryClient();
   const { driver, loading: driverLoading } = useDriver();
 
-  const { data, isLoading, refetch, isRefetching } = useGetAvailableOrders({
-    query: { refetchInterval: 10_000 } as any,
-  });
+  const { data, isLoading, refetch, isRefetching, isError, error } =
+    useGetAvailableOrders({
+      query: { refetchInterval: 10_000, enabled: !!driver } as any,
+    });
 
   const accept = useAcceptOrderDelivery({
     mutation: {
@@ -99,15 +100,24 @@ export default function DriverAvailable() {
       contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       data={data ?? []}
       keyExtractor={(o) => String(o.id)}
-      refreshing={isLoading || isRefetching}
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
       }
       ListEmptyComponent={
         <View style={{ alignItems: "center", marginTop: 60 }}>
-          <Text style={{ color: colors.mutedForeground }}>
-            Aucune commande disponible pour le moment.
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : isError ? (
+            <Text style={{ color: colors.destructive, textAlign: "center" }}>
+              {error instanceof Error
+                ? error.message
+                : "Erreur de chargement."}
+            </Text>
+          ) : (
+            <Text style={{ color: colors.mutedForeground }}>
+              Aucune commande disponible pour le moment.
+            </Text>
+          )}
         </View>
       }
       renderItem={({ item: o }) => (
